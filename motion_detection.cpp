@@ -2,6 +2,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include "boost/date_time/posix_time/posix_time.hpp"
 // opencv
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
@@ -13,11 +14,14 @@
 // C++
 #include <iostream>
 #include <sstream>
+#include <string>
 
 using namespace cv;
 using namespace std;
 namespace po = boost::program_options;
+namespace pt = boost::posix_time;
 
+#define MAX_FILE_NAME 
 
 /**
  * @function main
@@ -43,6 +47,7 @@ int main(int argc, char* argv[])
     ("height,h", po::value<int>(), "capture height")
     ("fps,f", po::value<int>(), "capture frame rate")
     ("fourcc,4", po::value< string >(&fourcc)->default_value("YUYV"), "capture fourcc")
+    ("thresold,t", po::value<int>(&device)->default_value(0), "minimum moved pixels to save an image")
     ;
 
   po::variables_map vm;
@@ -82,9 +87,13 @@ int main(int argc, char* argv[])
   
   cout << "Cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
-    ", fps=" << capture.get(CAP_PROP_FPS);
+    ", fps=" << capture.get(CAP_PROP_FPS) <<
+    endl;
   
 
+  int thresold = vm["thresold"].as<int>();
+  pt::time_facet* facet = new pt::time_facet("%Y-%m-%d_%H:%M:%S.%f");
+  
   //read input data. ESC or 'q' for quitting
   while( (char)keyboard != 'q' && (char)keyboard != 27 ){
     //read the current frame
@@ -100,9 +109,12 @@ int main(int argc, char* argv[])
     // Clean foreground from noise
     morphologyEx(fgMaskMOG2, fgMaskMOG2, MORPH_OPEN, kernel);
 
-    int c = countNonZero(fgMaskMOG2);
-    if (c != 0) {
-      cout << "Non-zero: " << c << endl ;
+    int num_motion_pixels = countNonZero(fgMaskMOG2);
+    if (num_motion_pixels > thresold) {
+      pt::ptime datetime = pt::microsec_clock::universal_time();
+      std::string filename = "motion_" + pt::to_iso_extended_string(datetime) + ".jpg";
+      imwrite(filename, frame);
+      cout << "motion: num_motion_pixels=" << num_motion_pixels << " filename=" << filename << endl;
     }
 
     if (vm.count("view")) {
@@ -110,7 +122,6 @@ int main(int argc, char* argv[])
       vector< vector< Point > > contours;
       findContours(fgMaskMOG2.clone(), contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
-      // for(std::vector<T>::iterator it = contours.begin(); it != contours.end(); ++it) {
       for(std::vector<int>::size_type i = 0; i != contours.size(); i++) {
         drawContours(frame, contours, i, Scalar(0, 0, 255));
       }

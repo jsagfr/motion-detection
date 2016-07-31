@@ -3,7 +3,7 @@ project( MotionDetection )
 
 find_package( Boost 1.40
   REQUIRED
-  COMPONENTS program_options )
+  COMPONENTS program_options date_time )
 include_directories( ${Boost_INCLUDE_DIR} )
 
 find_package( OpenCV 3.0.0 REQUIRED )
