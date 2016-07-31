@@ -85,6 +85,9 @@ int main(int argc, char* argv[])
     ", fps=" << capture.get(CAP_PROP_FPS);
   
 
+  int num_frames = 0;
+  time_t start, end;
+  time(&start);
   //read input data. ESC or 'q' for quitting
   while( (char)keyboard != 'q' && (char)keyboard != 27 ){
     //read the current frame
@@ -92,6 +95,14 @@ int main(int argc, char* argv[])
       cerr << "Unable to read next frame." << endl;
       cerr << "Exiting..." << endl;
       exit(EXIT_FAILURE);
+    }
+    
+    num_frames += 1;
+    if (num_frames % 10 == 0) {
+      time(&end);
+      double fps  = num_frames / difftime (end, start);
+      cout << "Estimated frames per second : " << fps << endl;
+      cout << "#frames: " << num_frames << endl;
     }
     
     //update the background model
