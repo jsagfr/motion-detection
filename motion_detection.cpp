@@ -1,10 +1,7 @@
-// boost
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/parsers.hpp>
-#include <boost/program_options/variables_map.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
-#include <boost/filesystem.hpp>
+// qt5 core
+#include <QDateTime>
+#include <QCommandLineParser>
+#include <QDir>
 // opencv
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -20,15 +17,7 @@
 
 using namespace cv;
 using namespace std;
-namespace po = boost::program_options;
-namespace pt = boost::posix_time;
-namespace fs = boost::filesystem;
 
-#define MAX_FILE_NAME 
-
-/**
- * @function main
- */
 int main(int argc, char* argv[])
 {
   int keyboard = 0;
@@ -38,31 +27,87 @@ int main(int argc, char* argv[])
   Mat kernel = getStructuringElement(MORPH_RECT, Size(3,3));
   int countContours = 0;
 
+  QCoreApplication app(argc, argv);
+  QCoreApplication::setApplicationName("motion-detection");
+  QCoreApplication::setApplicationVersion("0.1");
 
-  int device;
-  string fourcc;
-  po::options_description desc("Allowed options");
-  desc.add_options()
-    ("help", "help message")
-    ("view,x", "show opencv windows")
-    ("device,d", po::value<int>(&device)->default_value(0), "video device")
-    ("width,w", po::value<int>(), "capture width")
-    ("height,h", po::value<int>(), "capture height")
-    ("fps,f", po::value<int>(), "capture frame rate")
-    ("fourcc,4", po::value< string >(&fourcc)->default_value("YUYV"), "capture fourcc")
-    ("thresold,t", po::value<int>(&device)->default_value(0), "minimum moved pixels to save an image")
-    ;
+  QCommandLineParser parser;
+  parser.setApplicationDescription("Motion Detection");
+  parser.addHelpOption();
+  parser.addVersionOption();
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);    
+  QCommandLineOption viewOption(QStringList() << "x" << "view",
+                                QCoreApplication::translate("main", "show opencv windows."));
+  parser.addOption(viewOption);
 
-  if (vm.count("help")) {
-    cout << desc << "\n";
+  // An option with a value
+  QCommandLineOption deviceOption(QStringList() << "d" << "device",
+                                  QCoreApplication::translate("main", "video device <cam number>.", "0"),
+                                  QCoreApplication::translate("main", "device"));
+  parser.addOption(deviceOption);
+
+  QCommandLineOption widthOption(QStringList() << "w" << "width",
+                                 QCoreApplication::translate("main", "capture <width> pixels.", "800"),
+                                 QCoreApplication::translate("main", "width"));
+  parser.addOption(widthOption);
+
+  QCommandLineOption heightOption(QStringList() << "H" << "height",
+                                  QCoreApplication::translate("main", "capture <height> pixels.", "600"),
+                                  QCoreApplication::translate("main", "height"));
+  parser.addOption(heightOption);
+
+  QCommandLineOption fpsOption(QStringList() << "f" << "fps",
+                               QCoreApplication::translate("main", "capture <frame rate>.", "5"),
+                               QCoreApplication::translate("main", "fps"));
+  parser.addOption(fpsOption);
+
+  QCommandLineOption fourccOption(QStringList() << "4" << "fourcc",
+                                  QCoreApplication::translate("main", "fourcc capture <value>.", "YUYV"),
+                                  QCoreApplication::translate("main", "fourcc"));
+  parser.addOption(fourccOption);
+
+  QCommandLineOption thresoldOption(QStringList() << "t" << "thresold",
+                                    QCoreApplication::translate("main", "thresold <pixels moved> to save image.", "0"),
+                                    QCoreApplication::translate("main", "thresold"));
+  parser.addOption(thresoldOption);
+  // Process the actual command line arguments given by the user
+  parser.process(app);
+
+  bool view = parser.isSet(viewOption);
+  bool ok;
+  int device = parser.value(deviceOption).toInt(&ok, 10);
+  if (!ok) {
+    cerr << "device parameter error" << endl;
     exit(EXIT_FAILURE);
   }
+  int width = parser.value(widthOption).toInt(&ok, 10);
+  if (!ok) {
+    cerr << "width parameter error" << endl;
+    exit(EXIT_FAILURE);
+  }
+  int height = parser.value(heightOption).toInt(&ok, 10);
+  if (!ok) {
+    cerr << "height parameter error" << endl;
+    exit(EXIT_FAILURE);
+  }
+  int fps = parser.value(fpsOption).toInt(&ok, 10);
+  if (!ok) {
+    cerr << "fps parameter error" << endl;
+    exit(EXIT_FAILURE);
+  }
+  // int fourcc = parser.value(fourccOption).toInt(&ok, 10);
+  // if (!ok) {
+  //   cerr << "device parameter error" << endl;
+  //   exit(EXIT_FAILURE);
+  // }
+  int thresold = parser.value(thresoldOption).toInt(&ok, 10);
+  if (!ok) {
+    cerr << "thresold parameter error" << endl;
+    exit(EXIT_FAILURE);
+  }
+  
 
-  if (vm.count("view")) {
+  if (view) {
     //create GUI windows
     namedWindow("Frame");
     namedWindow("FG Mask MOG 2");
@@ -76,39 +121,17 @@ int main(int argc, char* argv[])
     exit(EXIT_FAILURE);
   }
 
-  if (vm.count("fps")) {
-    capture.set(CAP_PROP_FPS, vm["fps"].as<int>());
-  }
-  if (vm.count("width")) {
-    capture.set(CAP_PROP_FRAME_WIDTH, vm["width"].as<int>());
-  }
-  if (vm.count("height")) {
-    capture.set(CAP_PROP_FRAME_HEIGHT, vm["height"].as<int>());
-  }
-  int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
-  capture.set(CAP_PROP_FOURCC, ifourcc);
+  // int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
+  // capture.set(CAP_PROP_FOURCC, ifourcc);
   
   cout << "motion: cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
     ", fps=" << capture.get(CAP_PROP_FPS) <<
     endl;
   
-  int thresold = vm["thresold"].as<int>();
   int num_frames = 0;
-  time_t start, end;
-  pt::ptime now;
-
-  pt::time_facet *facet_filename = new pt::time_facet("motion %Y-%m-%d %H:%M:%s.jpg");
-  std::string filename;
-  std::stringstream stream_filename;
-  stream_filename.imbue(std::locale(std::locale::classic(), facet_filename));
-
-  pt::time_facet *facet_path = new pt::time_facet("%Y-%m-%d");
-  std::string path;
-  std::stringstream stream_path;
-  stream_path.imbue(std::locale(std::locale::classic(), facet_path));
-
-  time(&start);
+  // time_t start, end;
+  QDir dir = QDir::current();
   //read input data. ESC or 'q' for quitting
   while( (char)keyboard != 'q' && (char)keyboard != 27 ){
     //read the current frame
@@ -117,14 +140,14 @@ int main(int argc, char* argv[])
       cerr << "motion: exiting..." << endl;
       exit(EXIT_FAILURE);
     }
-    now = pt::microsec_clock::local_time();
+    QDateTime now(QDateTime::currentDateTime());
     
-    num_frames += 1;
-    if (num_frames % 10 == 0) {
-      time(&end);
-      double fps  = num_frames / difftime (end, start);
-      cout << "motion: estimated frame rate : \"" << fps << "\" fps" << endl;
-    }
+    // num_frames += 1;
+    // if (num_frames % 10 == 0) {
+    //   time(&end);
+    //   double fps  = num_frames / difftime (end, start);
+    //   cout << "motion: estimated frame rate : \"" << fps << "\" fps" << endl;
+    // }
     
     //update the background model
     pMOG2->apply(frame, fgMaskMOG2);
@@ -134,27 +157,18 @@ int main(int argc, char* argv[])
 
     int num_motion_pixels = countNonZero(fgMaskMOG2);
     if (num_motion_pixels > thresold) {
-      stream_filename.str("");
-      stream_filename << now;
-      filename = stream_filename.str();
+      QString dirname = now.toString("yyyy-MM-dd");
+      dir.mkpath(dirname);
 
-      stream_path.str("");
-      stream_path << now;
-      path = stream_path.str();
+      QDir file(dirname + "/motion " + now.toString("yyyy-MM-dd HH:mm:ss.zzz") + ".jpg");
+      std::string filename = file.path().toStdString();
 
-      fs::path p = fs::path(path);
-      if (fs::create_directory(p)) {
-	cout << "motion: path: \"" << path << "\" created!" << endl;
-      }
-      assert(fs::exists(p));
-
-      std::string file = (p / filename).string();
-      imwrite(file, frame);
-      cout << "motion: file \"" << file << "\" saved" << endl;
+      imwrite(filename, frame);
+      cout << "motion: file \"" << filename << "\" saved" << endl;
       cout << "motion: moved pixels \"" << num_motion_pixels << "\" detected" << endl;
     }
 
-    if (vm.count("view")) {
+    if (view) {
       // Find contours
       vector< vector< Point > > contours;
       findContours(fgMaskMOG2.clone(), contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
