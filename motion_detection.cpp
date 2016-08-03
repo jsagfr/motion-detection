@@ -91,8 +91,6 @@ int main(int argc, char* argv[])
     endl;
   
   int thresold = vm["thresold"].as<int>();
-  pt::time_facet* facet = new pt::time_facet("%Y-%m-%d_%H:%M:%S.%f");
-  
   int num_frames = 0;
   time_t start, end;
   time(&start);
