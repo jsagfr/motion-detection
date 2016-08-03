@@ -96,14 +96,14 @@ int main(int argc, char* argv[])
   int thresold = vm["thresold"].as<int>();
   int num_frames = 0;
   time_t start, end;
-  ptime now;
+  pt::ptime now;
 
-  time_facet *facet_filename = new time_facet("motion %Y-%m-%d %H:%M:%s.jpg");
+  pt::time_facet *facet_filename = new pt::time_facet("motion %Y-%m-%d %H:%M:%s.jpg");
   std::string filename;
   std::stringstream stream_filename;
   stream_filename.imbue(std::locale(std::locale::classic(), facet_filename));
 
-  time_facet *facet_path = new time_facet("%Y-%m-%d");
+  pt::time_facet *facet_path = new pt::time_facet("%Y-%m-%d");
   std::string path;
   std::stringstream stream_path;
   stream_path.imbue(std::locale(std::locale::classic(), facet_path));
@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
       cerr << "motion: exiting..." << endl;
       exit(EXIT_FAILURE);
     }
-    now = microsec_clock::local_time();
+    now = pt::microsec_clock::local_time();
     
     num_frames += 1;
     if (num_frames % 10 == 0) {
@@ -142,11 +142,11 @@ int main(int argc, char* argv[])
       stream_path << now;
       path = stream_path.str();
 
-      boost::filesystem::path p = boost::filesystem::path(path);
-      if (boost::filesystem::create_directory(p)) {
+      fs::path p = fs::path(path);
+      if (fs::create_directory(p)) {
 	cout << "motion: path: \"" << path << "\" created!" << endl;
       }
-      assert(boost::filesystem::exists(p));
+      assert(fs::exists(p));
 
       std::string file = (p / filename).string();
       imwrite(file, frame);
