@@ -2,11 +2,13 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <boost/filesystem.hpp>
 // opencv
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/videoio.hpp"
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/video.hpp>
 // C
@@ -20,6 +22,7 @@ using namespace cv;
 using namespace std;
 namespace po = boost::program_options;
 namespace pt = boost::posix_time;
+namespace fs = boost::filesystem;
 
 #define MAX_FILE_NAME 
 
@@ -85,7 +88,7 @@ int main(int argc, char* argv[])
   int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
   capture.set(CAP_PROP_FOURCC, ifourcc);
   
-  cout << "Cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
+  cout << "motion: cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
     ", fps=" << capture.get(CAP_PROP_FPS) <<
     endl;
@@ -93,22 +96,34 @@ int main(int argc, char* argv[])
   int thresold = vm["thresold"].as<int>();
   int num_frames = 0;
   time_t start, end;
+  ptime now;
+
+  time_facet *facet_filename = new time_facet("motion %Y-%m-%d %H:%M:%s.jpg");
+  std::string filename;
+  std::stringstream stream_filename;
+  stream_filename.imbue(std::locale(std::locale::classic(), facet_filename));
+
+  time_facet *facet_path = new time_facet("%Y-%m-%d");
+  std::string path;
+  std::stringstream stream_path;
+  stream_path.imbue(std::locale(std::locale::classic(), facet_path));
+
   time(&start);
   //read input data. ESC or 'q' for quitting
   while( (char)keyboard != 'q' && (char)keyboard != 27 ){
     //read the current frame
     if(!capture.read(frame)) {
-      cerr << "Unable to read next frame." << endl;
-      cerr << "Exiting..." << endl;
+      cerr << "motion: unable to read next frame." << endl;
+      cerr << "motion: exiting..." << endl;
       exit(EXIT_FAILURE);
     }
+    now = microsec_clock::local_time();
     
     num_frames += 1;
     if (num_frames % 10 == 0) {
       time(&end);
       double fps  = num_frames / difftime (end, start);
-      cout << "Estimated frames per second : " << fps << endl;
-      cout << "#frames: " << num_frames << endl;
+      cout << "motion: estimated frame rate : \"" << fps << "\" fps" << endl;
     }
     
     //update the background model
@@ -119,10 +134,24 @@ int main(int argc, char* argv[])
 
     int num_motion_pixels = countNonZero(fgMaskMOG2);
     if (num_motion_pixels > thresold) {
-      pt::ptime datetime = pt::microsec_clock::universal_time();
-      std::string filename = "motion_" + pt::to_iso_extended_string(datetime) + ".jpg";
-      imwrite(filename, frame);
-      cout << "motion: num_motion_pixels=" << num_motion_pixels << " filename=" << filename << endl;
+      stream_filename.str("");
+      stream_filename << now;
+      filename = stream_filename.str();
+
+      stream_path.str("");
+      stream_path << now;
+      path = stream_path.str();
+
+      boost::filesystem::path p = boost::filesystem::path(path);
+      if (boost::filesystem::create_directory(p)) {
+	cout << "motion: path: \"" << path << "\" created!" << endl;
+      }
+      assert(boost::filesystem::exists(p));
+
+      std::string file = (p / filename).string();
+      imwrite(file, frame);
+      cout << "motion: file \"" << file << "\" saved" << endl;
+      cout << "motion: moved pixels \"" << num_motion_pixels << "\" detected" << endl;
     }
 
     if (vm.count("view")) {
