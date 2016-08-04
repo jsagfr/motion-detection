@@ -37,38 +37,38 @@ int main(int argc, char* argv[])
   parser.addVersionOption();
 
   QCommandLineOption viewOption(QStringList() << "x" << "view",
-                                QCoreApplication::translate("main", "show opencv windows."));
+                                "show opencv windows.");
   parser.addOption(viewOption);
 
   // An option with a value
   QCommandLineOption deviceOption(QStringList() << "d" << "device",
-                                  QCoreApplication::translate("main", "video device <cam number>.", "0"),
-                                  QCoreApplication::translate("main", "device"));
+                                  "video device <cam number>.",
+                                  "device", "0");
   parser.addOption(deviceOption);
 
   QCommandLineOption widthOption(QStringList() << "w" << "width",
-                                 QCoreApplication::translate("main", "capture <width> pixels.", "800"),
-                                 QCoreApplication::translate("main", "width"));
+                                 "capture <width> pixels.",
+                                 "width", "800");
   parser.addOption(widthOption);
 
   QCommandLineOption heightOption(QStringList() << "H" << "height",
-                                  QCoreApplication::translate("main", "capture <height> pixels.", "600"),
-                                  QCoreApplication::translate("main", "height"));
+                                  "capture <height> pixels.",
+                                  "height", "600");
   parser.addOption(heightOption);
 
   QCommandLineOption fpsOption(QStringList() << "f" << "fps",
-                               QCoreApplication::translate("main", "capture <frame rate>.", "5"),
-                               QCoreApplication::translate("main", "fps"));
+                               "capture <frame rate>.",
+                               "fps", "5");
   parser.addOption(fpsOption);
 
   QCommandLineOption fourccOption(QStringList() << "4" << "fourcc",
-                                  QCoreApplication::translate("main", "fourcc capture <value>.", "YUYV"),
-                                  QCoreApplication::translate("main", "fourcc"));
+                                  "fourcc capture <value>.",
+                                  "fourcc", "YUYV");
   parser.addOption(fourccOption);
 
   QCommandLineOption thresoldOption(QStringList() << "t" << "thresold",
-                                    QCoreApplication::translate("main", "thresold <pixels moved> to save image.", "0"),
-                                    QCoreApplication::translate("main", "thresold"));
+                                    "thresold <pixels moved> to save image.",
+                                    "thresold", "0");
   parser.addOption(thresoldOption);
   // Process the actual command line arguments given by the user
   parser.process(app);
@@ -95,11 +95,7 @@ int main(int argc, char* argv[])
     cerr << "fps parameter error" << endl;
     exit(EXIT_FAILURE);
   }
-  // int fourcc = parser.value(fourccOption).toInt(&ok, 10);
-  // if (!ok) {
-  //   cerr << "device parameter error" << endl;
-  //   exit(EXIT_FAILURE);
-  // }
+  std::string fourcc = parser.value(fourccOption).toStdString();
   int thresold = parser.value(thresoldOption).toInt(&ok, 10);
   if (!ok) {
     cerr << "thresold parameter error" << endl;
@@ -121,8 +117,8 @@ int main(int argc, char* argv[])
     exit(EXIT_FAILURE);
   }
 
-  // int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
-  // capture.set(CAP_PROP_FOURCC, ifourcc);
+  int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
+  capture.set(CAP_PROP_FOURCC, ifourcc);
   
   cout << "motion: cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
@@ -164,8 +160,9 @@ int main(int argc, char* argv[])
       std::string filename = file.path().toStdString();
 
       imwrite(filename, frame);
-      cout << "motion: file \"" << filename << "\" saved" << endl;
-      cout << "motion: moved pixels \"" << num_motion_pixels << "\" detected" << endl;
+      cout << "motion: file \"" << filename << "\""
+           << ", folder \"" << dirname.toStdString() << "\""
+           << ", pixels \"" << num_motion_pixels << "\"" << endl;
     }
 
     if (view) {
