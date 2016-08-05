@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
   capture.set(CAP_PROP_FRAME_WIDTH, width);
   capture.set(CAP_PROP_FRAME_HEIGHT, height);
   int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
-  // capture.set(CAP_PROP_FOURCC, ifourcc);
+  capture.set(CAP_PROP_FOURCC, ifourcc);
   
   cout << "motion: cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
