@@ -1,5 +1,6 @@
 // qt5 core
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QCommandLineParser>
 #include <QDir>
 // opencv
@@ -118,7 +119,7 @@ int main(int argc, char* argv[])
   }
 
   int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
-  capture.set(CAP_PROP_FOURCC, ifourcc);
+  // capture.set(CAP_PROP_FOURCC, ifourcc);
   
   cout << "motion: cam : width=" << capture.get(CAP_PROP_FRAME_WIDTH) <<
     ", height=" << capture.get(CAP_PROP_FRAME_HEIGHT) <<
@@ -126,7 +127,8 @@ int main(int argc, char* argv[])
     endl;
   
   int num_frames = 0;
-  // time_t start, end;
+  QElapsedTimer timer;
+  timer.start();
   QDir dir = QDir::current();
   //read input data. ESC or 'q' for quitting
   while( (char)keyboard != 'q' && (char)keyboard != 27 ){
@@ -138,12 +140,11 @@ int main(int argc, char* argv[])
     }
     QDateTime now(QDateTime::currentDateTime());
     
-    // num_frames += 1;
-    // if (num_frames % 10 == 0) {
-    //   time(&end);
-    //   double fps  = num_frames / difftime (end, start);
-    //   cout << "motion: estimated frame rate : \"" << fps << "\" fps" << endl;
-    // }
+    num_frames += 1;
+    if (num_frames % 10 == 0) {
+      double fps  = num_frames * 1000 / timer.elapsed();
+      cout << "motion: " << num_frames << " frames at rate : \"" << fps << "\" fps" << endl;
+    }
     
     //update the background model
     pMOG2->apply(frame, fgMaskMOG2);
