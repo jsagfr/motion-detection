@@ -77,27 +77,28 @@ int main(int argc, char* argv[])
   bool ok;
   int device = parser.value(deviceOption).toInt(&ok, 10);
   if (!ok) {
-    cerr << "device parameter error" << endl;
+    cerr << "device parameter \"" << parser.value(deviceOption) <<"\" invalid" << endl;
     exit(EXIT_FAILURE);
   }
   int width = parser.value(widthOption).toInt(&ok, 10);
   if (!ok) {
-    cerr << "width parameter error" << endl;
+    cerr << "width parameter \"" << parser.value(widthOption) <<"\" invalid" << endl;
     exit(EXIT_FAILURE);
   }
   int height = parser.value(heightOption).toInt(&ok, 10);
   if (!ok) {
-    cerr << "height parameter error" << endl;
+    cerr << "height parameter \"" << parser.value(heightOption) <<"\" invalid" << endl;
     exit(EXIT_FAILURE);
   }
   int fps = parser.value(fpsOption).toInt(&ok, 10);
   if (!ok) {
-    cerr << "fps parameter error" << endl;
+    cerr << "fps parameter \"" << parser.value(fpsOption) <<"\" invalid" << endl;
     exit(EXIT_FAILURE);
   }
   std::string fourcc = parser.value(fourccOption).toStdString();
   int thresold = parser.value(thresoldOption).toInt(&ok, 10);
   if (!ok) {
+    cerr << "thresold parameter \"" << parser.value(thresoldOption) <<"\" invalid" << endl;
     cerr << "thresold parameter error" << endl;
     exit(EXIT_FAILURE);
   }
@@ -117,6 +118,9 @@ int main(int argc, char* argv[])
     exit(EXIT_FAILURE);
   }
 
+  capture.set(CAP_PROP_FPS, fps);
+  capture.set(CAP_PROP_FRAME_WIDTH, width);
+  capture.set(CAP_PROP_FRAME_HEIGHT, height);
   int ifourcc = VideoWriter::fourcc(fourcc[0], fourcc[1], fourcc[2], fourcc[3]);
   capture.set(CAP_PROP_FOURCC, ifourcc);
   
